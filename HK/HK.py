@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import truncnorm
 
 from heapq import heapify, heappush, heappop
+import random
 
 class Member :
     """
@@ -16,17 +17,20 @@ class Community :
     """
     A community of members.
     """
-    def __init__(self, n, alpha=0.5, activity=1000) :
+    def __init__(self, n, gamma=1.0, alpha=0.5, activity=1000) :
         # Initialize parameters.
         assert(n>0)
         assert(0.0 <= alpha <= 1.0)
         assert(activity > 0)
+        assert(gamma>=1.0)
         self.n = n
         self.alpha = alpha
         self.activity = activity
+        self.gamma = gamma
 
         # Instantiate members.
         self.members = [ Member(ID) for ID in range(n) ]
+        self.members.sort(key=(lambda item: item.opinion))
 
         # Sample timeline.
         mean_times = (5 + truncnorm.rvs(-3, 3, size=self.n)) / 2
@@ -54,8 +58,8 @@ class Community :
         """
         while len(self.schedule) > 0 : # All done.
             _, ID = heappop(self.schedule)
+            self.timelines[ID].pop()
             if len(self.timelines[ID]) > 0 :
-                self.timelines[ID].pop()
                 heappush(self.schedule, (self.timelines[ID][-1], ID))
             yield ID
 
@@ -69,5 +73,32 @@ class Community :
         x.opinion = self.alpha * opy + (1-self.alpha) * opx
         y.opinion = self.alpha * opx + (1-self.alpha) * opy
 
+    def sample_interaction(self, x) :
+        """
+        Sample the member with whom the member x interacts.
+        x interacts with any of the persons having difference of opinion
+        less than x.epsilon with a probability given by the power law :
+        p(x,y) = d(x,y)^-gamma / sum(z)(d(x,z)^-gamma)
+        """
+        candidates = [ (abs(member.opinion-x.opinion)**(-self.gamma), member.ID)
+            for member in self.members
+            if abs(member.opinion-x.opinion) < x.epsilon and member.ID != x.ID ]
+        norm = sum(candidate[0] for candidate in candidates)
+        random_variate = random.random() * norm
+        for candidate in candidates :
+            if candidate[0] > random_variate :
+                return candidate[1]
+            random_variate -= candidate[0]
 
-community = Community(300, alpha=0.3)
+    def simulate(self) :
+        __time = 0
+        for x in self.interactions() :
+            y = self.sample_interaction(self.members[x])
+            if y is None : continue # Isolated opinion
+            self.exchange_opinions(self.members[x], self.members[y])
+            __time+=1
+            print(__time, end='\r')
+        print()
+
+community = Community(300, alpha=0.3, gamma=1.2, activity=500)
+community.simulate()
