@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import math
 import random
 import operator
@@ -7,6 +8,8 @@ def get_col(arr,col):
         return [row[col] for row in arr]
 N = 100
 R = 10
+np.random.seed(int(time.time()))
+random.seed(int(time.time()))
 Matrix = np.random.rand(N,N)
 Matrix = Matrix/Matrix.sum(axis=1)[:,None]
 T = []
@@ -42,7 +45,7 @@ for it1 in range(R):
                         kk += 1
 f = open('ndimFJ1.txt','w')
 count = 0
-gamma = 1.5
+gamma = 2
 for tim,it in T: 
         if count%500 == 0:
                 print(count)
@@ -64,15 +67,15 @@ for tim,it in T:
         for it1 in range(N):
                 sum3 = 0
                 for it2 in range(R):
-                        sum3 += abs(Opinion[it][it2]-Opinion[it1][it2])
-                sum3 = sum3 * 1.0/R
-                sum2 += pow(Matrix[it][it1]/(sum3+0.01),gamma)
+                        sum3 += pow(Opinion[it][it2]-Opinion[it1][it2],2)
+                sum3 = math.sqrt(sum3)
+                sum2 += pow(Matrix[it][it1]/(sum3+0.00001),gamma)
         for it1 in range(N):
                 sum3 = 0
                 for it2 in range(R):
-                        sum3 += abs(Opinion[it][it2]-Opinion[it1][it2])
-                sum3 = sum3 * 1.0/R                
-                sum1 += pow(Matrix[it][it1]/(sum3+0.01),gamma)*np.matrix(Opinion[it1])
+                        sum3 += pow(Opinion[it][it2]-Opinion[it1][it2],2)
+                sum3 = math.sqrt(sum3)                
+                sum1 += pow(Matrix[it][it1]/(sum3+0.000001),gamma)*np.matrix(Opinion[it1])
         temp1 = np.matrix(sum1)
         temp2 = lam*np.matmul(np.matrix(C),temp1.transpose())
         temp3 = (1-lam)*np.matrix(Opinion0[it])
