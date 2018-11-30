@@ -74,8 +74,10 @@ for tim,it in T:
                 sum3 = 0
                 for it2 in range(R):
                         sum3 += pow(Opinion[it][it2]-Opinion[it1][it2],2)
-                sum3 = math.sqrt(sum3)                
-                sum1 += pow(Matrix[it][it1]/(sum3+0.000001),gamma)*np.matrix(Opinion[it1])
+                sum3 = math.sqrt(sum3)
+                #Comment previous line and uncomment next line for original FJ model
+                #sum1 += pow(Matrix[it][it1]/(sum3+0.000001),gamma)*np.matrix(Opinion[it1])
+                sum1 += Matrix[it][it1]*np.matrix(Opinion[it1])
         temp1 = np.matrix(sum1)
         temp2 = lam*np.matmul(np.matrix(C),temp1.transpose())
         temp3 = (1-lam)*np.matrix(Opinion0[it])
