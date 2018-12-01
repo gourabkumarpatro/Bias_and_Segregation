@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import truncnorm
+import matplotlib.pyplot as plt
 
 from heapq import heapify, heappush, heappop
 import random
@@ -9,28 +10,28 @@ class Member :
     Member in a community.
     """
     def __init__(self, ID) :
-        self.opinion = np.random.normal(0.5, 1/6)
-        self.epsilon = np.random.random()
+        self.opinion = np.random.normal(0, 1/2)
+        self.epsilon = np.random.random() * .5
         self.ID = ID
 
 class Community :
     """
     A community of members.
     """
-    def __init__(self, n, gamma=1.0, alpha=0.5, activity=1000) :
+    def __init__(self, n, gamma=1.0, alpha=0.5, activity=10000) :
         # Initialize parameters.
         assert(n>0)
         assert(0.0 <= alpha <= 1.0)
         assert(activity > 0)
-        assert(gamma>=1.0)
+        assert(gamma>=0.0)
         self.n = n
         self.alpha = alpha
         self.activity = activity
         self.gamma = gamma
+        self.epsilon = 10**(-10)
 
         # Instantiate members.
         self.members = [ Member(ID) for ID in range(n) ]
-        self.members.sort(key=(lambda item: item.opinion))
 
         # Sample timeline.
         mean_times = (5 + truncnorm.rvs(-3, 3, size=self.n)) / 2
@@ -43,13 +44,17 @@ class Community :
 
         # Truncate interactions to earliest last interaction time.
         cutoff_time = min(timeline[-1] for timeline in self.timelines)
+        total = 0
         for timeline in self.timelines :
             while len(timeline) > 0 and timeline[-1] > cutoff_time :
                 timeline.pop()
             timeline.reverse()
+            total += len(timeline)
+        print(total, max(len(timeline) for timeline in self.timelines))
 
         # Generate schedule.
-        self.schedule = [ (self.timelines[idx][-1], idx) for idx in range(n) ]
+        self.schedule = [ (self.timelines[idx][-1], idx) for idx in range(n)
+                            if len(self.timelines[idx]) > 0 ]
         heapify(self.schedule)
 
     def interactions(self) :
@@ -82,7 +87,7 @@ class Community :
         """
         candidates = [ (abs(member.opinion-x.opinion)**(-self.gamma), member.ID)
             for member in self.members
-            if abs(member.opinion-x.opinion) < x.epsilon and member.ID != x.ID ]
+            if ( (self.epsilon < abs(member.opinion-x.opinion) < x.epsilon) and (member.ID != x.ID) ) ]
         norm = sum(candidate[0] for candidate in candidates)
         random_variate = random.random() * norm
         for candidate in candidates :
@@ -91,14 +96,28 @@ class Community :
             random_variate -= candidate[0]
 
     def simulate(self) :
+        plot_o = [ [member.opinion] for member in self.members ]
+        plot_t = [ [0] for _ in range(self.n) ]
+
         __time = 0
         for x in self.interactions() :
-            y = self.sample_interaction(self.members[x])
-            if y is None : continue # Isolated opinion
-            self.exchange_opinions(self.members[x], self.members[y])
             __time+=1
             print(__time, end='\r')
+            y = self.sample_interaction(self.members[x])
+            if y is None : # Isolated opinion
+                continue
+            self.exchange_opinions(self.members[x], self.members[y])
+            plot_o[x].append(self.members[x].opinion)
+            plot_o[y].append(self.members[y].opinion)
+            plot_t[x].append(__time)
+            plot_t[y].append(__time)
         print()
+        return plot_o, plot_t
 
-community = Community(300, alpha=0.3, gamma=1.2, activity=500)
-community.simulate()
+n = 900
+A = 10000
+community = Community(n, alpha=0.25, gamma=1.5, activity=A)
+opinions, stamps = community.simulate()
+for i in range(n) :
+    plt.plot(stamps[i], opinions[i])
+plt.show()
