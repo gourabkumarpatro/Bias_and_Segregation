@@ -28,7 +28,7 @@ class Community :
         self.activity = activity
         self.gamma = gamma
         self.epsilon = 10**(-10)
-        self.threshold = 10**(-8)
+        self.threshold = 10**(-10)
 
         # Instantiate members.
         self.members = [ Member(ID) for ID in range(n) ]
@@ -119,7 +119,7 @@ class Community :
             curr_state[x] = self.members[x].opinion
             curr_state[y] = self.members[y].opinion
             diff = (curr_state - prev_state) / (__time - prev_time + self.epsilon)
-            mavg_diff = mavg_diff * .95 + diff
+            mavg_diff = mavg_diff * .99 + diff * .01
             prev_time = __time
             # print( np.sum(mavg_diff**2) )
             if np.sum( mavg_diff**2 ) < self.threshold : break

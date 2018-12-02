@@ -17,5 +17,5 @@ if __name__ == "__main__" :
         print("\nGamma :", Gamma)
         for i in range(n) :
             plt.plot(stamps[i], opinions[i])
-        plt.savefig("Results/Exp2/Plot_%2d.png"%idx)
+        plt.savefig("Results/Exp2/Plot_%02d.png"%idx)
         plt.clf()
