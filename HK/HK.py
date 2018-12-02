@@ -59,14 +59,14 @@ class Community :
 
     def interactions(self) :
         """
-        Returns the ID of the next interacting member.
+        Returns the time and member ID for the next interaction.
         """
         while len(self.schedule) > 0 : # All done.
-            _, ID = heappop(self.schedule)
+            timestamp, ID = heappop(self.schedule)
             self.timelines[ID].pop()
             if len(self.timelines[ID]) > 0 :
                 heappush(self.schedule, (self.timelines[ID][-1], ID))
-            yield ID
+            yield timestamp, ID
 
     def exchange_opinions(self, x, y) :
         """
@@ -99,13 +99,12 @@ class Community :
         plot_o = [ [member.opinion] for member in self.members ]
         plot_t = [ [0] for _ in range(self.n) ]
 
-        __time = 0
-        for x in self.interactions() :
-            __time+=1
-            print(__time, end='\r')
+        counter=0
+        for __time, x in self.interactions() :
+            counter+=1
+            print(counter, end='\r')
             y = self.sample_interaction(self.members[x])
-            if y is None : # Isolated opinion
-                continue
+            if y is None : continue # Isolated opinion
             self.exchange_opinions(self.members[x], self.members[y])
             plot_o[x].append(self.members[x].opinion)
             plot_o[y].append(self.members[y].opinion)
