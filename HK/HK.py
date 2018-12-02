@@ -29,6 +29,7 @@ class Community :
         self.activity = activity
         self.gamma = gamma
         self.epsilon = 10**(-10)
+        self.threshold = 10**(-8)
 
         # Instantiate members.
         self.members = [ Member(ID) for ID in range(n) ]
@@ -50,7 +51,6 @@ class Community :
                 timeline.pop()
             timeline.reverse()
             total += len(timeline)
-        print(total, max(len(timeline) for timeline in self.timelines))
 
         # Generate schedule.
         self.schedule = [ (self.timelines[idx][-1], idx) for idx in range(n)
@@ -64,7 +64,7 @@ class Community :
         while len(self.schedule) > 0 : # All done.
             timestamp, ID = heappop(self.schedule)
             self.timelines[ID].pop()
-            if len(self.timelines[ID]) > 0 :
+            if self.timelines[ID] :
                 heappush(self.schedule, (self.timelines[ID][-1], ID))
             yield timestamp, ID
 
@@ -99,6 +99,11 @@ class Community :
         plot_o = [ [member.opinion] for member in self.members ]
         plot_t = [ [0] for _ in range(self.n) ]
 
+        prev_state = np.array([member.opinion for member in self.members])
+        curr_state = np.array([member.opinion for member in self.members])
+        mavg_diff  = np.zeros_like(curr_state)
+
+        prev_time = 0
         counter=0
         for __time, x in self.interactions() :
             counter+=1
@@ -110,13 +115,23 @@ class Community :
             plot_o[y].append(self.members[y].opinion)
             plot_t[x].append(__time)
             plot_t[y].append(__time)
+            consensus_time = __time
+            prev_state = curr_state.copy()
+            curr_state[x] = self.members[x].opinion
+            curr_state[y] = self.members[y].opinion
+            diff = (curr_state - prev_state) / (__time - prev_time + self.epsilon)
+            mavg_diff = mavg_diff * .95 + diff
+            prev_time = __time
+            # print( np.sum(mavg_diff**2) )
+            if np.sum( mavg_diff**2 ) < self.threshold : break
         print()
-        return plot_o, plot_t
+        return plot_o, plot_t, prev_time
 
 n = 900
 A = 10000
 community = Community(n, alpha=0.25, gamma=1.5, activity=A)
-opinions, stamps = community.simulate()
+opinions, stamps, toc = community.simulate()
+print("TOC ", toc)
 for i in range(n) :
     plt.plot(stamps[i], opinions[i])
 plt.show()
