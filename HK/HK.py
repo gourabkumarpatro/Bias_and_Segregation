@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.stats import truncnorm
-import matplotlib.pyplot as plt
 
 from heapq import heapify, heappush, heappop
 import random
@@ -104,10 +103,10 @@ class Community :
         mavg_diff  = np.zeros_like(curr_state)
 
         prev_time = 0
-        counter=0
+        counter, total = 0, sum(len(timeline) for timeline in self.timelines)
         for __time, x in self.interactions() :
             counter+=1
-            print(counter, end='\r')
+            print('%8d/%8d'%(counter, total), end='\r')
             y = self.sample_interaction(self.members[x])
             if y is None : continue # Isolated opinion
             self.exchange_opinions(self.members[x], self.members[y])
@@ -124,14 +123,4 @@ class Community :
             prev_time = __time
             # print( np.sum(mavg_diff**2) )
             if np.sum( mavg_diff**2 ) < self.threshold : break
-        print()
         return plot_o, plot_t, prev_time
-
-n = 900
-A = 10000
-community = Community(n, alpha=0.25, gamma=1.5, activity=A)
-opinions, stamps, toc = community.simulate()
-print("TOC ", toc)
-for i in range(n) :
-    plt.plot(stamps[i], opinions[i])
-plt.show()
